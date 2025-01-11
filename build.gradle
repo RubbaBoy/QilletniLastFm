@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'is.yarr.qilletni.music.lastfm'
+version = '1.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_22
+targetCompatibility = JavaVersion.VERSION_22
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.apache.logging.log4j:log4j-api:2.22.1'
+    compileOnly 'org.apache.logging.log4j:log4j-core:2.22.1'
+    compileOnly 'org.apache.logging.log4j:log4j-slf4j-impl:2.22.1'
+
+    // Provided by the `postgres` library
+    compileOnly 'org.hibernate:hibernate-core:5.5.7.Final'
+    compileOnly 'org.postgresql:postgresql:42.3.8'
+
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    implementation ('org.eclipse.jetty:jetty-server:12.0.4') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+
+    compileOnly  'is.yarr.qilletni.api:qilletni-api:1.0.0-SNAPSHOT'
+}
+
+shadowJar {
+    configurations = [project.configurations.runtimeClasspath]
+    archiveClassifier.set('')
+}
+
+test {
+    useJUnitPlatform()
+}
