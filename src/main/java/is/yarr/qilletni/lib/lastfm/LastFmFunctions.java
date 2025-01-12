@@ -16,7 +16,6 @@ public class LastFmFunctions {
     }
 
     public void getUser(String user) {
-//        LastFmAPI.getInstance().getUser()
         // TODO: Implement this method
     }
 

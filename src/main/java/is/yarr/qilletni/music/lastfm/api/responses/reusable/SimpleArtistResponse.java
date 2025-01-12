@@ -1,6 +1,6 @@
 package is.yarr.qilletni.music.lastfm.api.responses.reusable;
 
-public record ArtistResponse(
+public record SimpleArtistResponse(
         String url,
         String name,
         String mbid

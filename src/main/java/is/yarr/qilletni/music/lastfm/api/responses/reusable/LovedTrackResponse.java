@@ -3,7 +3,7 @@ package is.yarr.qilletni.music.lastfm.api.responses.reusable;
 import java.util.List;
 
 public record LovedTrackResponse(
-        ArtistResponse artist,
+        SimpleArtistResponse artist,
         DateResponse date,
         String mbid,
         String url,

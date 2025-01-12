@@ -6,7 +6,7 @@ public record AlbumTrackResponse(
         String url,
         String name,
         Attr attr,
-        ArtistResponse artist
+        SimpleArtistResponse artist
 ) {
     public record Attr(int rank) {}
 }
