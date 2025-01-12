@@ -11,6 +11,10 @@ import is.yarr.qilletni.music.lastfm.api.responses.GetLovedTracksResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetRecentTracksResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTokenResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTopArtistsResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetTopTracksResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyAlbumChartResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyArtistChartResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyTrackChartResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.LastFmResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTopAlbumsResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAPIUtility;
@@ -188,6 +192,61 @@ public class LastFmAPI {
                 .thenApply(response ->
                         this.<GetTopArtistsResponse>checkErrorResponse(response)
                                 .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTopArtistsResponse.class))));
+    }
+    
+    // TODO: getTopTags
+
+    public CompletableFuture<LastFmResponse<GetTopTracksResponse>> getTopTracks(String user, Period period, Page page) {
+        var params = new LastFmParams(Map.of(
+                "user", user
+        ))
+                .setPage(page)
+                .setPeriod(period);
+
+        return makeLastFmRequest("user.getTopTracks", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                        this.<GetTopTracksResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTopTracksResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetWeeklyAlbumChartResponse>> getWeeklyAlbumChart(String user, DateRange dateRange) {
+        var params = new LastFmParams(Map.of(
+                "user", user
+        ))
+                .setDateRange(dateRange);
+
+        return makeLastFmRequest("user.getWeeklyAlbumChart", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response -> 
+                        this.<GetWeeklyAlbumChartResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetWeeklyAlbumChartResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetWeeklyArtistChartResponse>> getWeeklyArtistChart(String user, DateRange dateRange) {
+        var params = new LastFmParams(Map.of(
+                "user", user
+        ))
+                .setDateRange(dateRange);
+
+        return makeLastFmRequest("user.getWeeklyArtistChart", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                        this.<GetWeeklyArtistChartResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetWeeklyArtistChartResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetWeeklyTrackChartResponse>> getWeeklyTrackChart(String user, DateRange dateRange) {
+        var params = new LastFmParams(Map.of(
+                "user", user
+        ))
+                .setDateRange(dateRange);
+
+        return makeLastFmRequest("user.getWeeklyTrackChart", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response -> 
+                        this.<GetWeeklyTrackChartResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetWeeklyTrackChartResponse.class))));
     }
 
     private <T> Optional<LastFmResponse<T>> checkErrorResponse(String response) {

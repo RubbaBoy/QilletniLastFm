@@ -48,9 +48,9 @@ public class LastFmFunctions {
         // TODO: Implement this method
     }
 
-    public void getWeeklyChartList(String user) {
-        // TODO: Implement this method
-    }
+//    public void getWeeklyChartList(String user) {
+//        // TODO: Implement this method
+//    }
 
     public void getWeeklyTrackChart(String user) {
         // TODO: Implement this method

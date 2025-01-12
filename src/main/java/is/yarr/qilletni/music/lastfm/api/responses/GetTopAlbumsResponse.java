@@ -1,6 +1,7 @@
 package is.yarr.qilletni.music.lastfm.api.responses;
 
 import com.google.gson.annotations.SerializedName;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.RankAttrResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.SimpleArtistResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.ImageResponse;
 
@@ -18,9 +19,8 @@ public record GetTopAlbumsResponse(TopAlbums topalbums) {
             String mbid,
             String url,
             String playcount,
-            @SerializedName("@attr") Attr attr,
+            @SerializedName("@attr") RankAttrResponse attr,
             String name
     ) {
-        public record Attr(int rank) {}
     }
 }

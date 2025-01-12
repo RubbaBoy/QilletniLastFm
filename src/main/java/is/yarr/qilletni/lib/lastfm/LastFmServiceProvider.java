@@ -16,6 +16,7 @@ import is.yarr.qilletni.music.lastfm.LastFmStringIdentifier;
 import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
 import is.yarr.qilletni.music.lastfm.api.Page;
 import is.yarr.qilletni.music.lastfm.api.Period;
+import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullArtistResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAuthorizer;
 import is.yarr.qilletni.music.lastfm.play.ReroutablePlayActor;
@@ -65,7 +66,7 @@ public class LastFmServiceProvider implements ServiceProvider {
     
     private void sayHello(LastFmAPI lastFmAPI) {
 //        lastFmAPI.getAlbumInfo("Knocked Loose", "A Tear in the Fabric of Life").join();
-        var friendsResponse = lastFmAPI.getTopArtists("RubbaBoy", Period.UNSET, new Page()).join();
+        var friendsResponse = lastFmAPI.getWeeklyTrackChart("RubbaBoy", new DateRange()).join();
         
         if (friendsResponse.isError()) {
             LOGGER.error("Error fetching: {}", friendsResponse.getErrorResponse());
@@ -76,8 +77,8 @@ public class LastFmServiceProvider implements ServiceProvider {
 
         System.out.println("friends = " + friends);
 
-        for (FullArtistResponse fullArtistResponse : friends.topartists().artist()) {
-            System.out.println("\t%s  (%s plays)".formatted(fullArtistResponse.name(), fullArtistResponse.playcount()));
+        for (var artist : friends.weeklytrackchart().track()) {
+            System.out.println("\t%s  (%s plays) - %s".formatted(artist.name(), artist.playcount(), artist.mbid()));
         }
 
 //        System.out.println("res = " + friends);
