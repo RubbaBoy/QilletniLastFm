@@ -34,6 +34,11 @@ public class LastFmParams {
         
         return this;
     }
+    
+    public LastFmParams put(String key, String value) {
+        params.put(key, value);
+        return this;
+    }
 
     public static long convertToEpochSeconds(LocalDate date) {
         return date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond();

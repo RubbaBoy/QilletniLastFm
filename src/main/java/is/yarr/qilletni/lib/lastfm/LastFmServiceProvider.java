@@ -18,6 +18,7 @@ import is.yarr.qilletni.music.lastfm.api.Page;
 import is.yarr.qilletni.music.lastfm.api.Period;
 import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullArtistResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.RecentTrackResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAuthorizer;
 import is.yarr.qilletni.music.lastfm.play.ReroutablePlayActor;
 import org.slf4j.Logger;
@@ -66,20 +67,29 @@ public class LastFmServiceProvider implements ServiceProvider {
     
     private void sayHello(LastFmAPI lastFmAPI) {
 //        lastFmAPI.getAlbumInfo("Knocked Loose", "A Tear in the Fabric of Life").join();
-        var friendsResponse = lastFmAPI.getWeeklyTrackChart("RubbaBoy", new DateRange()).join();
+//        var friendsResponse = lastFmAPI.getTrackInfo("believe", "cher", "RubbaBoy", true).join();
+        
+        var friendsResponse = lastFmAPI.getTrackInfo("God Knows", "Knocked Loose", "", true).join(); // 162247e0-b727-497d-9845-8416ba81cf93
+        
+//        var recentResp = lastFmAPI.getRecentTracks("RubbaBoy", false, new DateRange(), new Page()).join();
+//        if (!recentResp.isError()) {
+//            for (RecentTrackResponse recentTrackResponse : recentResp.getResponse().recenttracks().track()) {
+//                System.out.println("%s - %s   %s".formatted(recentTrackResponse.name(), recentTrackResponse.artist().text(), recentTrackResponse.mbid()));
+//            }
+//        }
         
         if (friendsResponse.isError()) {
             LOGGER.error("Error fetching: {}", friendsResponse.getErrorResponse());
             return;
         }
-        
+
         var friends = friendsResponse.getResponse();
 
         System.out.println("friends = " + friends);
 
-        for (var artist : friends.weeklytrackchart().track()) {
-            System.out.println("\t%s  (%s plays) - %s".formatted(artist.name(), artist.playcount(), artist.mbid()));
-        }
+//        for (var artist : friends.weeklytrackchart().track()) {
+//            System.out.println("\t%s  (%s plays) - %s".formatted(artist.name(), artist.playcount(), artist.mbid()));
+//        }
 
 //        System.out.println("res = " + friends);
         

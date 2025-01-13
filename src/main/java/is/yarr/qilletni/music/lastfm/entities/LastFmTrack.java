@@ -3,24 +3,30 @@ package is.yarr.qilletni.music.lastfm.entities;
 import is.yarr.qilletni.api.music.Album;
 import is.yarr.qilletni.api.music.Artist;
 import is.yarr.qilletni.api.music.Track;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OrderColumn;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 public class LastFmTrack implements Track {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(LastFmTrack.class);
 
-    @Id
-    private String id;
+    @EmbeddedId
+    private ArtistCompositeKey compositeKey;
+    
+    // The mbid isn't always available for a track (who knows why)
+    private String mbid = "";
     private String name;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+//    @ManyToOne(fetch = FetchType.EAGER)
     private LastFmArtist artist;
     
     @ManyToOne(fetch = FetchType.EAGER)
@@ -30,17 +36,27 @@ public class LastFmTrack implements Track {
 
     public LastFmTrack() {}
 
-    public LastFmTrack(String id, String name, LastFmArtist artist, LastFmAlbum album, int duration) {
-        this.id = id;
+    public LastFmTrack(String mbid, String name, LastFmArtist artist, LastFmAlbum album, int duration) {
+        this.mbid = mbid == null ? "" : mbid;
         this.name = name;
         this.artist = artist;
         this.album = album;
         this.duration = duration;
+
+        this.compositeKey = new ArtistCompositeKey(name, artist);
+    }
+
+    public ArtistCompositeKey getCompositeKey() {
+        return compositeKey;
+    }
+
+    public Optional<String> getMbid() {
+        return Optional.ofNullable(mbid);
     }
 
     @Override
     public String getId() {
-        return id;
+        return compositeKey.getId();
     }
 
     @Override
@@ -50,12 +66,13 @@ public class LastFmTrack implements Track {
 
     @Override
     public Artist getArtist() {
+        LOGGER.error("Artists are not fully supported in the LastFm service provider. Expect inconsistent behavior.");
         return artist;
     }
 
     @Override
     public List<Artist> getArtists() {
-        return List.of(artist);
+        return List.of(getArtist());
     }
 
     @Override
@@ -73,22 +90,16 @@ public class LastFmTrack implements Track {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         LastFmTrack that = (LastFmTrack) object;
-        return Objects.equals(id, that.id);
+        return Objects.equals(mbid, that.mbid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(mbid);
     }
 
     @Override
     public String toString() {
-        return "LastFmTrack{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", artist=" + artist +
-                ", album=" + album +
-                ", duration=" + duration +
-                '}';
+        return "LastFmTrack{id='%s', name='%s', artist=%s, album=%s, duration=%d}".formatted(mbid, name, artist, album, duration);
     }
 }

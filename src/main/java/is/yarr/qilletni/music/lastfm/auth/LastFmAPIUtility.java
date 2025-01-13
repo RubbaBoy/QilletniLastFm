@@ -1,10 +1,12 @@
 package is.yarr.qilletni.music.lastfm.auth;
 
+import is.yarr.qilletni.lib.lastfm.exceptions.LastFmAPIErrorException;
+import is.yarr.qilletni.music.lastfm.api.responses.LastFmResponse;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,15 @@ public class LastFmAPIUtility {
         return params.entrySet().stream()
                 .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
                 .collect(Collectors.joining("&"));
+    }
+    
+    public static <T> T verifySuccess(LastFmResponse<T> lastFmResponse) {
+        if (lastFmResponse.isError()) {
+            var error = lastFmResponse.getErrorResponse();
+            throw new LastFmAPIErrorException("LastFm responses with error code %d: %s".formatted(error.error(), error.message()));
+        }
+        
+        return lastFmResponse.getResponse();
     }
     
 }

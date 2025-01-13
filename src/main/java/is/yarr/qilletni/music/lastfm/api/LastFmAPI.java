@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import is.yarr.qilletni.music.lastfm.api.responses.AlbumInfoResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
+import is.yarr.qilletni.music.lastfm.api.responses.GetArtistInfoResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetFriendsResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.ErrorResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetLovedTracksResponse;
@@ -12,6 +13,7 @@ import is.yarr.qilletni.music.lastfm.api.responses.GetRecentTracksResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTokenResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTopArtistsResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetTopTracksResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetTrackInfoResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyAlbumChartResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyArtistChartResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.GetWeeklyTrackChartResponse;
@@ -23,17 +25,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.StringReader;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class LastFmAPI {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LastFmAPI.class);
 
     private static final String API_URL = "https://ws.audioscrobbler.com/2.0/";
@@ -77,16 +82,19 @@ public class LastFmAPI {
 
         params.putAll(additionalParams);
 
+        System.out.println("params = " + params);
+        
         var apiSig = LastFmAPIUtility.generateSignature(params, apiSecret);
         params.put("api_sig", apiSig);
         params.put("format", "json");
 
         var postData = params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
                 .collect(Collectors.joining("&"));
 
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
+                .header("User-Agent", "Qilletni LastFm API v0.0.1")
                 .POST(HttpRequest.BodyPublishers.ofString(postData))
                 .build();
 
@@ -121,6 +129,63 @@ public class LastFmAPI {
                         .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, AlbumInfoResponse.class))));
     }
 
+    public CompletableFuture<LastFmResponse<AlbumInfoResponse>> getAlbumInfo(String mbid) {
+        return makeLastFmRequest("album.getInfo", Map.of("mbid", mbid))
+                .thenApply(HttpResponse::body)
+                .thenApply(response -> this.<AlbumInfoResponse>checkErrorResponse(response)
+                        .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, AlbumInfoResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetTrackInfoResponse>> getTrackInfo(String name, String artist, String username, boolean autocorrect) {
+        var params = new LastFmParams(Map.of("track", name, "artist", artist, "autocorrect", autocorrect ? "1" : "0"));
+
+        if (username != null && !username.isBlank()) {
+            LOGGER.error("Username in getTrackInfo will likely return no track for some reason.");
+            params.put("username", username);
+        }
+
+        return makeLastFmRequest("track.getInfo", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                    this.<GetTrackInfoResponse>checkErrorResponse(response)
+                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetTrackInfoResponse>> getTrackInfo(String mbid) {
+        var params = new LastFmParams(Map.of("mbid", mbid));
+
+        return makeLastFmRequest("track.getInfo", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                        this.<GetTrackInfoResponse>checkErrorResponse(response)
+                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetArtistInfoResponse>> getArtistInfo(String mbid) {
+        var params = new LastFmParams(Map.of("mbid", mbid));
+
+        return makeLastFmRequest("artist.getInfo", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                        this.<GetArtistInfoResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetArtistInfoResponse.class))));
+    }
+
+    public CompletableFuture<LastFmResponse<GetArtistInfoResponse>> getArtistInfo(String artist, String username, boolean autocorrect) {
+        var params = new LastFmParams(Map.of("artist", artist, "autocorrect", autocorrect ? "1" : "0"));
+
+        if (username != null && !username.isBlank()) {
+            LOGGER.error("Username in getTrackInfo will likely return no track for some reason.");
+            params.put("username", username);
+        }
+
+        return makeLastFmRequest("artist.getInfo", params.getMap())
+                .thenApply(HttpResponse::body)
+                .thenApply(response ->
+                        this.<GetArtistInfoResponse>checkErrorResponse(response)
+                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetArtistInfoResponse.class))));
+    }
+
     // TODO: Getting friends does NOT support `recenttracks` yet
     public CompletableFuture<LastFmResponse<GetFriendsResponse>> getFriends(String user, Page page) {
         var params = new LastFmParams(Map.of("user", user))
@@ -149,9 +214,9 @@ public class LastFmAPI {
             LOGGER.error("Extended recent tracks not supported yet");
             extended = false;
         }
-        
+
         var params = new LastFmParams(Map.of(
-                "user", user 
+                "user", user
 //                "extended", extended ? "1" : "0"
         ))
                 .setPage(page)
@@ -182,7 +247,7 @@ public class LastFmAPI {
 
     public CompletableFuture<LastFmResponse<GetTopArtistsResponse>> getTopArtists(String user, Period period, Page page) {
         var params = new LastFmParams(Map.of(
-                "user", user 
+                "user", user
         ))
                 .setPage(page)
                 .setPeriod(period);
@@ -193,7 +258,7 @@ public class LastFmAPI {
                         this.<GetTopArtistsResponse>checkErrorResponse(response)
                                 .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTopArtistsResponse.class))));
     }
-    
+
     // TODO: getTopTags
 
     public CompletableFuture<LastFmResponse<GetTopTracksResponse>> getTopTracks(String user, Period period, Page page) {
@@ -218,7 +283,7 @@ public class LastFmAPI {
 
         return makeLastFmRequest("user.getWeeklyAlbumChart", params.getMap())
                 .thenApply(HttpResponse::body)
-                .thenApply(response -> 
+                .thenApply(response ->
                         this.<GetWeeklyAlbumChartResponse>checkErrorResponse(response)
                                 .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetWeeklyAlbumChartResponse.class))));
     }
@@ -244,7 +309,7 @@ public class LastFmAPI {
 
         return makeLastFmRequest("user.getWeeklyTrackChart", params.getMap())
                 .thenApply(HttpResponse::body)
-                .thenApply(response -> 
+                .thenApply(response ->
                         this.<GetWeeklyTrackChartResponse>checkErrorResponse(response)
                                 .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetWeeklyTrackChartResponse.class))));
     }
