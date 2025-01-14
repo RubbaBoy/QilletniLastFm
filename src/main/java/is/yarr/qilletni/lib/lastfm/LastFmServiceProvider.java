@@ -36,6 +36,8 @@ public class LastFmServiceProvider implements ServiceProvider {
     private StringIdentifier stringIdentifier;
     private LastFmAuthorizer authorizer;
 
+    private static ServiceProvider serviceProviderInstance;
+
     @Override
     public CompletableFuture<Void> initialize(BiFunction<PlayActor, MusicCache, TrackOrchestrator> defaultTrackOrchestratorFunction, PackageConfig packageConfig) {
         this.packageConfig = packageConfig;
@@ -48,6 +50,8 @@ public class LastFmServiceProvider implements ServiceProvider {
             musicFetcher = lastFmMusicFetcher;
             musicCache = new LastFmMusicCache(lastFmMusicFetcher);
             trackOrchestrator = defaultTrackOrchestratorFunction.apply(new ReroutablePlayActor(), musicCache);
+
+            serviceProviderInstance = this;
 
             sayHello(musicCache);
         });
@@ -118,6 +122,11 @@ public class LastFmServiceProvider implements ServiceProvider {
         }
 
         HibernateUtil.initializeSessionFactory(packageConfig.getOrThrow("dbUrl"), packageConfig.getOrThrow("dbUsername"), packageConfig.getOrThrow("dbPassword"));
+    }
+
+    public static ServiceProvider getServiceProviderInstance() {
+        Objects.requireNonNull(serviceProviderInstance, "ServiceProvider#initialize must be invoked to initialize ServiceProvider");
+        return serviceProviderInstance;
     }
 
 }

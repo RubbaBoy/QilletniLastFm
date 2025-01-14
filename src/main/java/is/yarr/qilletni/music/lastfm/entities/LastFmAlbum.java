@@ -1,7 +1,9 @@
 package is.yarr.qilletni.music.lastfm.entities;
 
+import is.yarr.qilletni.api.auth.ServiceProvider;
 import is.yarr.qilletni.api.music.Album;
 import is.yarr.qilletni.api.music.Artist;
+import is.yarr.qilletni.lib.lastfm.LastFmServiceProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +75,11 @@ public class LastFmAlbum implements Album {
     @Override
     public List<Artist> getArtists() {
         return List.of(getArtist());
+    }
+
+    @Override
+    public ServiceProvider getServiceProvider() {
+        return LastFmServiceProvider.getServiceProviderInstance();
     }
 
     @Override
