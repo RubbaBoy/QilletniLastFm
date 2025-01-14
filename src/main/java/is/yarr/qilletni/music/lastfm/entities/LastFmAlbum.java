@@ -78,8 +78,8 @@ public class LastFmAlbum implements Album {
     }
 
     @Override
-    public ServiceProvider getServiceProvider() {
-        return LastFmServiceProvider.getServiceProviderInstance();
+    public Optional<ServiceProvider> getServiceProvider() {
+        return Optional.ofNullable(LastFmServiceProvider.getServiceProviderInstance());
     }
 
     @Override

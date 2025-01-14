@@ -7,6 +7,7 @@ import is.yarr.qilletni.lib.lastfm.LastFmServiceProvider;
 import javax.persistence.Embeddable;
 import javax.persistence.Transient;
 import java.io.Serializable;
+import java.util.Optional;
 
 //@Entity
 @Embeddable
@@ -41,8 +42,8 @@ public class LastFmArtist implements Artist, Serializable {
 
     @Override
     @Transient
-    public ServiceProvider getServiceProvider() {
-        return LastFmServiceProvider.getServiceProviderInstance();
+    public Optional<ServiceProvider> getServiceProvider() {
+        return Optional.ofNullable(LastFmServiceProvider.getServiceProviderInstance());
     }
 
     @Override

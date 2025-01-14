@@ -99,8 +99,8 @@ public class LastFmTrack implements Track {
     }
 
     @Override
-    public ServiceProvider getServiceProvider() {
-        return LastFmServiceProvider.getServiceProviderInstance();
+    public Optional<ServiceProvider> getServiceProvider() {
+        return Optional.ofNullable(LastFmServiceProvider.getServiceProviderInstance());
     }
 
     @Override
