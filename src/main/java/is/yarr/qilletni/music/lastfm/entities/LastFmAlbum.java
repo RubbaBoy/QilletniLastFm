@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToMany;
+import javax.persistence.PostLoad;
+import javax.persistence.Transient;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,25 +19,31 @@ public class LastFmAlbum implements Album {
 
     @EmbeddedId
     private ArtistCompositeKey compositeKey;
-    
+
+    @Transient
     private LastFmArtist artist;
 
     // mbid not used for (unique) identification as it can be null/empty
     private String mbid;
 
-    private String name;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    private List<LastFmTrack> tracks;
-
     public LastFmAlbum() {}
 
     public LastFmAlbum(String mbid, String name, String artistName) {
         this.mbid = mbid == null ? "" : mbid;
-        this.name = name;
         this.artist = new LastFmArtist("", "", artistName);
         
-        this.compositeKey = new ArtistCompositeKey(name, artist);
+        this.compositeKey = new ArtistCompositeKey(name, artistName);
+    }
+
+    @PostLoad
+    private void onPostLoad() {
+        if (artist == null && compositeKey != null) {
+            artist = new LastFmArtist("", "", compositeKey.getArtistName());
+        }
+    }
+
+    public ArtistCompositeKey getCompositeKey() {
+        return compositeKey;
     }
 
     public Optional<String> getMbid() {
@@ -51,12 +57,16 @@ public class LastFmAlbum implements Album {
 
     @Override
     public String getName() {
-        return name;
+        return compositeKey.getName();
     }
 
     @Override
     public Artist getArtist() {
         LOGGER.error("Artists are not fully supported in the LastFm service provider. They will only have the artist name from an Album");
+        if (artist == null) {
+            artist = new LastFmArtist("", "", compositeKey.getArtistName());
+        }
+        
         return artist;
     }
 
@@ -65,16 +75,8 @@ public class LastFmAlbum implements Album {
         return List.of(getArtist());
     }
 
-    public List<LastFmTrack> getTracks() {
-        return tracks;
-    }
-
-    public void setTracks(List<LastFmTrack> tracks) {
-        this.tracks = tracks;
-    }
-
     @Override
     public String toString() {
-        return "LastFmAlbum{id='%s', name='%s', artist=%s, tracks=%s}".formatted(mbid, name, artist, tracks);
+        return "LastFmAlbum{id='%s', name='%s', artist=%s}".formatted(mbid, compositeKey.getName(), artist);
     }
 }

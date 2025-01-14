@@ -1,6 +1,7 @@
 package is.yarr.qilletni.lib.lastfm;
 
 import is.yarr.qilletni.api.auth.ServiceProvider;
+import is.yarr.qilletni.api.exceptions.config.ConfigInitializeException;
 import is.yarr.qilletni.api.lib.persistence.PackageConfig;
 import is.yarr.qilletni.api.music.MusicCache;
 import is.yarr.qilletni.api.music.MusicFetcher;
@@ -10,20 +11,16 @@ import is.yarr.qilletni.api.music.factories.AlbumTypeFactory;
 import is.yarr.qilletni.api.music.factories.CollectionTypeFactory;
 import is.yarr.qilletni.api.music.factories.SongTypeFactory;
 import is.yarr.qilletni.api.music.orchestration.TrackOrchestrator;
+import is.yarr.qilletni.lib.lastfm.database.HibernateUtil;
 import is.yarr.qilletni.music.lastfm.LastFmMusicCache;
 import is.yarr.qilletni.music.lastfm.LastFmMusicFetcher;
 import is.yarr.qilletni.music.lastfm.LastFmStringIdentifier;
-import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
-import is.yarr.qilletni.music.lastfm.api.Page;
-import is.yarr.qilletni.music.lastfm.api.Period;
-import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
-import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullArtistResponse;
-import is.yarr.qilletni.music.lastfm.api.responses.reusable.RecentTrackResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAuthorizer;
 import is.yarr.qilletni.music.lastfm.play.ReroutablePlayActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -47,60 +44,25 @@ public class LastFmServiceProvider implements ServiceProvider {
         authorizer = new LastFmAuthorizer(packageConfig, packageConfig.getOrThrow("apiKey"), packageConfig.getOrThrow("apiSecret"));
 
         return authorizer.authorizeLastFm().thenAccept(lastFmAPI -> {
-            
-            sayHello(lastFmAPI);
-            
             var lastFmMusicFetcher = new LastFmMusicFetcher();
             musicFetcher = lastFmMusicFetcher;
             musicCache = new LastFmMusicCache(lastFmMusicFetcher);
             trackOrchestrator = defaultTrackOrchestratorFunction.apply(new ReroutablePlayActor(), musicCache);
+
+            sayHello(musicCache);
         });
-        
-//        return authorizer.authorizeSpotify().thenRun(() -> {
-//            var spotifyMusicFetcher = new SpotifyMusicFetcher(authorizer);
-//            SpotifyApiSingleton.setSpotifyAuthorizer(authorizer);
-//            musicFetcher = spotifyMusicFetcher;
-//            musicCache = new SpotifyMusicCache(spotifyMusicFetcher);
-//            trackOrchestrator = defaultTrackOrchestratorFunction.apply(new ReroutablePlayActor(), musicCache);
-//        });
     }
     
-    private void sayHello(LastFmAPI lastFmAPI) {
-//        lastFmAPI.getAlbumInfo("Knocked Loose", "A Tear in the Fabric of Life").join();
-//        var friendsResponse = lastFmAPI.getTrackInfo("believe", "cher", "RubbaBoy", true).join();
+    private void sayHello(LastFmMusicCache musicCache) {
+        var trackOptional = musicCache.getTrack("God Knows", "Knocked Loose");
         
-        var friendsResponse = lastFmAPI.getTrackInfo("God Knows", "Knocked Loose", "", true).join(); // 162247e0-b727-497d-9845-8416ba81cf93
-        
-//        var recentResp = lastFmAPI.getRecentTracks("RubbaBoy", false, new DateRange(), new Page()).join();
-//        if (!recentResp.isError()) {
-//            for (RecentTrackResponse recentTrackResponse : recentResp.getResponse().recenttracks().track()) {
-//                System.out.println("%s - %s   %s".formatted(recentTrackResponse.name(), recentTrackResponse.artist().text(), recentTrackResponse.mbid()));
-//            }
-//        }
-        
-        if (friendsResponse.isError()) {
-            LOGGER.error("Error fetching: {}", friendsResponse.getErrorResponse());
+        if (trackOptional.isEmpty()) {
+            LOGGER.error("Track not found");
             return;
         }
-
-        var friends = friendsResponse.getResponse();
-
-        System.out.println("friends = " + friends);
-
-//        for (var artist : friends.weeklytrackchart().track()) {
-//            System.out.println("\t%s  (%s plays) - %s".formatted(artist.name(), artist.playcount(), artist.mbid()));
-//        }
-
-//        System.out.println("res = " + friends);
         
-//        if (albumResponse.isError()) {
-//            LOGGER.error("Error fetching albums: {}", albumResponse.getErrorResponse());
-//            return;
-//        }
-//
-//        var response = albumResponse.getResponse();
-//
-//        System.out.println("albums = " + response.topalbums());
+        var track = trackOptional.get();
+        LOGGER.info("Track found: {}", track);
     }
 
     @Override
@@ -139,23 +101,23 @@ public class LastFmServiceProvider implements ServiceProvider {
     }
 
     private void initConfig() {
-//        packageConfig.loadConfig();
-//
-//        var requiredOptions = List.of("clientId", "redirectUri", "dbUrl", "dbUsername", "dbPassword");
-//        var allFound = true;
-//
-//        for (var option : requiredOptions) {
-//            if (packageConfig.get(option).isEmpty()) {
-//                allFound = false;
-//                LOGGER.error("Required config value '{}' not found in Spotify config", option);
-//            }
-//        }
-//
-//        if (!allFound) {
-//            throw new ConfigInitializeException("Spotify config is missing required options, aborting");
-//        }
+        packageConfig.loadConfig();
 
-//        HibernateUtil.initializeSessionFactory(packageConfig.getOrThrow("dbUrl"), packageConfig.getOrThrow("dbUsername"), packageConfig.getOrThrow("dbPassword"));
+        var requiredOptions = List.of("apiKey", "apiSecret", "dbUrl", "dbUsername", "dbPassword");
+        var allFound = true;
+
+        for (var option : requiredOptions) {
+            if (packageConfig.get(option).isEmpty()) {
+                allFound = false;
+                LOGGER.error("Required config value '{}' not found in Last.Fm config", option);
+            }
+        }
+
+        if (!allFound) {
+            throw new ConfigInitializeException("Last.Fm config is missing required options, aborting");
+        }
+
+        HibernateUtil.initializeSessionFactory(packageConfig.getOrThrow("dbUrl"), packageConfig.getOrThrow("dbUsername"), packageConfig.getOrThrow("dbPassword"));
     }
 
 }

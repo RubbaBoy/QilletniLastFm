@@ -70,13 +70,15 @@ public class LastFmMusicFetcher implements MusicFetcher {
 
     @Override
     public List<Track> fetchTracks(List<TrackNameArtist> tracks) {
-        return tracks.parallelStream().map(trackNameArtist -> fetchTrack(trackNameArtist.name(), trackNameArtist.artist()))
-                .filter(Optional::isPresent).map(Optional::get).toList();
+        return tracks.parallelStream()
+                .map(trackNameArtist -> fetchTrack(trackNameArtist.name(), trackNameArtist.artist()))
+                .filter(Optional::isPresent)
+                .map(Optional::get).toList();
     }
 
     @Override
     public List<Track> fetchTracksById(List<String> trackIds) {
-        return trackIds.parallelStream().map(id -> fetchTrackById(id))
+        return trackIds.parallelStream().map(this::fetchTrackById)
                 .filter(Optional::isPresent).map(Optional::get).toList();
     }
 

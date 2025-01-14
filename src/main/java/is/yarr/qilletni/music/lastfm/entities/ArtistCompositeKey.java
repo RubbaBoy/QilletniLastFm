@@ -11,9 +11,9 @@ public class ArtistCompositeKey implements Serializable {
 
     public ArtistCompositeKey() {}
 
-    public ArtistCompositeKey(String name, LastFmArtist artist) {
+    public ArtistCompositeKey(String name, String artistName) {
         this.name = name;
-        this.artistName = artist.getName();
+        this.artistName = artistName;
     }
 
     public String getName() {

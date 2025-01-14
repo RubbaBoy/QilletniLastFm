@@ -7,4 +7,5 @@ module QilletniLastFm.main {
     requires com.google.gson;
     requires java.persistence;
     requires jdk.jfr;
+    requires org.hibernate.orm.core;
 }

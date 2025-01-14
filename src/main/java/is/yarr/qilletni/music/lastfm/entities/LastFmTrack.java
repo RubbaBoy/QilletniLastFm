@@ -10,6 +10,8 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
+import javax.persistence.PostLoad;
+import javax.persistence.Transient;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,9 +26,8 @@ public class LastFmTrack implements Track {
     
     // The mbid isn't always available for a track (who knows why)
     private String mbid = "";
-    private String name;
 
-//    @ManyToOne(fetch = FetchType.EAGER)
+    @Transient
     private LastFmArtist artist;
     
     @ManyToOne(fetch = FetchType.EAGER)
@@ -38,12 +39,18 @@ public class LastFmTrack implements Track {
 
     public LastFmTrack(String mbid, String name, LastFmArtist artist, LastFmAlbum album, int duration) {
         this.mbid = mbid == null ? "" : mbid;
-        this.name = name;
         this.artist = artist;
         this.album = album;
         this.duration = duration;
 
-        this.compositeKey = new ArtistCompositeKey(name, artist);
+        this.compositeKey = new ArtistCompositeKey(name, artist.getName());
+    }
+
+    @PostLoad
+    private void onPostLoad() {
+        if (artist == null && compositeKey != null) {
+            artist = new LastFmArtist("", "", compositeKey.getArtistName());
+        }
     }
 
     public ArtistCompositeKey getCompositeKey() {
@@ -61,12 +68,16 @@ public class LastFmTrack implements Track {
 
     @Override
     public String getName() {
-        return name;
+        return compositeKey.getName();
     }
 
     @Override
     public Artist getArtist() {
         LOGGER.error("Artists are not fully supported in the LastFm service provider. Expect inconsistent behavior.");
+        if (artist == null) {
+            artist = new LastFmArtist("", "", compositeKey.getArtistName());
+        }
+        
         return artist;
     }
 
@@ -100,6 +111,6 @@ public class LastFmTrack implements Track {
 
     @Override
     public String toString() {
-        return "LastFmTrack{id='%s', name='%s', artist=%s, album=%s, duration=%d}".formatted(mbid, name, artist, album, duration);
+        return "LastFmTrack{id='%s', name='%s', artist=%s, album=%s, duration=%d}".formatted(mbid, compositeKey.getName(), artist, album, duration);
     }
 }
