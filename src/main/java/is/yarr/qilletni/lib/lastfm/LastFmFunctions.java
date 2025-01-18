@@ -1,31 +1,162 @@
 package is.yarr.qilletni.lib.lastfm;
 
+import is.yarr.qilletni.api.lang.types.EntityType;
+import is.yarr.qilletni.api.lang.types.JavaType;
+import is.yarr.qilletni.api.lang.types.SongType;
+import is.yarr.qilletni.api.lang.types.conversion.TypeConverter;
+import is.yarr.qilletni.api.lang.types.entity.EntityInitializer;
+import is.yarr.qilletni.api.music.factories.SongTypeFactory;
+import is.yarr.qilletni.music.lastfm.LastFmMusicFetcher;
 import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
+import is.yarr.qilletni.music.lastfm.api.Page;
+import is.yarr.qilletni.music.lastfm.api.Period;
+import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
+import is.yarr.qilletni.music.lastfm.api.responses.LastFmResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.UserResponseAttr;
+
+import java.time.LocalDate;
+import java.util.Optional;
 
 public class LastFmFunctions {
+    
+    private final LastFmAPI lastFmAPI;
+    private final EntityInitializer entityInitializer;
+    private final SongTypeFactory songTypeFactory;
+    private final TypeConverter typeConverter;
 
-    public void getFriends(String user) {
-//        LastFmAPI.getInstance().getFriends()
-        // TODO: Implement this method
+    public LastFmFunctions(EntityInitializer entityInitializer, SongTypeFactory songTypeFactory, TypeConverter typeConverter) {
+        this.entityInitializer = entityInitializer;
+        this.songTypeFactory = songTypeFactory;
+        this.typeConverter = typeConverter;
+        this.lastFmAPI = LastFmAPI.getInstance();
     }
 
-    public void getFriends(String user, int page) {
-//        LastFmAPI.getInstance().getFriends()
-        // TODO: Implement this method
+    public EntityType getFriends(String user) {
+        var friendsResponse = lastFmAPI.getFriends(user, new Page()).join();
+        if (friendsResponse.isError()) {
+            return createErrorResult(friendsResponse);
+        }
+
+        var friends = friendsResponse.getResponse().friends();
         
+        var userList = friends.user().stream().map(friend -> entityInitializer.initializeEntity("User", friend.url(), friend.name())).toList();
+        return createResult(userList, null, friends.attr());
+    }
+
+    public EntityType getFriends(String user, EntityType pageEntity) {
+        var page = createPageFromEntity(pageEntity);
+        var friendsAPIResponse = lastFmAPI.getFriends(user, page).join();
+        if (friendsAPIResponse.isError()) {
+            return createErrorResult(friendsAPIResponse);
+        }
+        
+        var friends = friendsAPIResponse.getResponse().friends();
+
+        var userList = friends.user().stream().map(friend -> entityInitializer.initializeEntity("User", friend.url(), friend.name())).toList();
+        return createResult(userList, null, friends.attr());
     }
 
     public void getUser(String user) {
-        // TODO: Implement this method
+//        lastFmAPI.getUserInfo() // TODO
     }
 
-    public void getLovedTracks(String user) {
-        // done
-        // TODO: Implement this method
+    public EntityType getLovedTracks(String user) {
+        return fetchLovedTracks(user, new Page());
     }
 
-    public void getRecentTracks(String user) {
-        // TODO: Implement this method
+    public EntityType getLovedTracks(String user, EntityType pageEntity) {
+        return fetchLovedTracks(user, createPageFromEntity(pageEntity));
+    }
+    
+    private record LovedTrackWrapper(SongType track, long dateUts, String dateText) {}
+    
+    private EntityType fetchLovedTracks(String user, Page page) {
+        var lovedTracksResponse = lastFmAPI.getLovedTracks(user, page).join();
+        if (lovedTracksResponse.isError()) {
+            return createErrorResult(lovedTracksResponse);
+        }
+
+        var lovedTracks = lovedTracksResponse.getResponse().lovedtracks();
+
+        var lovedTrackListData = lovedTracks.track().stream()
+                .map(lovedTrackResponse -> {
+                    var track = LastFmMusicFetcher.createTrack(lovedTrackResponse);
+                    SongType song = songTypeFactory.createSongFromTrack(track);
+                    long dateUts = -1;
+                    var dateText = "";
+
+                    if (lovedTrackResponse.date() != null) {
+                        dateUts = lovedTrackResponse.date().uts();
+                        dateText = lovedTrackResponse.date().text();
+                    }
+
+                    return new LovedTrackWrapper(song, dateUts, dateText);
+                }).toList();
+
+        var lovedTrackList = lovedTrackListData.stream()
+                .map(LovedTrackWrapper::track)
+                .toList();
+
+        var wrappedLovedTrackList = lovedTrackListData.stream()
+                .map(lovedTrack -> typeConverter.convertFromRecordToEntity("LovedTrack", lovedTrack))
+                .toList();
+        
+        return createResult(lovedTrackList, wrappedLovedTrackList, lovedTracks.attr());
+    }
+
+    public EntityType getRecentTracks(String user) {
+        return fetchRecentTracks(user, new Page(), new DateRange());
+    }
+
+    public EntityType getRecentTracks(String user, EntityType pageEntity, EntityType dateRangeEntity) {
+        var page = createPageFromEntity(pageEntity);
+        var dateRange = createDateRangeFromEntity(dateRangeEntity);
+        
+        return fetchRecentTracks(user, page, dateRange);
+    }
+    
+    private record RecentTrackWrapper(SongType track, boolean nowPlaying, long dateUts, String dateText) {}
+    
+    private EntityType fetchRecentTracks(String user, Page page, DateRange dateRange) {
+        var recentTracksResponse = lastFmAPI.getRecentTracks(user, false, dateRange, page).join();
+        if (recentTracksResponse.isError()) {
+            return createErrorResult(recentTracksResponse);
+        }
+
+        var recentTracks = recentTracksResponse.getResponse().recenttracks();
+
+        // TODO: These don't contain the album, should they be fetched manually individually?
+        //       that seems too intense for just getting the album
+        
+        var recentTrackListData = recentTracks.track().stream()
+                .map(recentTrackResponse -> {
+                            var track = LastFmMusicFetcher.createTrack(recentTrackResponse);
+                            SongType song = songTypeFactory.createSongFromTrack(track);
+                            boolean nowPlaying = false;
+                            long dateUts = -1;
+                            var dateText = "";
+                            
+                            if (recentTrackResponse.attr() != null) {
+                                nowPlaying = recentTrackResponse.attr().nowPlaying();
+                            }
+                            
+                            if (recentTrackResponse.date() != null) {
+                                dateUts = recentTrackResponse.date().uts();
+                                dateText = recentTrackResponse.date().text();
+                            }
+                            
+                            return new RecentTrackWrapper(song, nowPlaying, dateUts, dateText);
+                        }).toList();
+
+        var recentTrackList = recentTrackListData.stream()
+                .map(RecentTrackWrapper::track)
+                .toList();
+
+        var wrappedRecentTrackList = recentTrackListData.stream()
+                .map(topTrack -> typeConverter.convertFromRecordToEntity("RecentTrack", topTrack))
+                .toList();
+        
+        return createResult(recentTrackList, wrappedRecentTrackList, recentTracks.attr());
     }
 
     public void getTopAlbums(String user) {
@@ -36,8 +167,54 @@ public class LastFmFunctions {
         // TODO: Implement this method
     }
 
-    public void getTopTracks(String user) {
-        // TODO: Implement this method
+    public EntityType getTopTracks(String user) {
+        return fetchTopTracks(user, Period.UNSET, new Page());
+    }
+
+    public EntityType getTopTracks(String user, String periodString, EntityType pageEntity) {
+        var page = createPageFromEntity(pageEntity);
+        var period = Period.fromString(periodString);
+        
+        return fetchTopTracks(user, period, page);
+    }
+
+    private record TopTrackWrapper(SongType track, int playCount, int rank) {}
+
+    private EntityType fetchTopTracks(String user, Period period, Page pageEntity) {
+        var topTracksResponse = lastFmAPI.getTopTracks(user, period, pageEntity).join();
+        if (topTracksResponse.isError()) {
+            return createErrorResult(topTracksResponse);
+        }
+
+        var topTracks = topTracksResponse.getResponse().toptracks();
+        
+        var topTrackListData = topTracks.track().stream()
+                .map(topTrackResponse -> {
+                    var track = LastFmMusicFetcher.createTrack(topTrackResponse);
+                    SongType song = songTypeFactory.createSongFromTrack(track);
+                    var playCount = -1;
+                    if (topTrackResponse.playcount() != null) {
+                        playCount = topTrackResponse.playcount();
+                    }
+                    
+                    var rank = -1;
+                    if (topTrackResponse.attr() != null) {
+                        rank = topTrackResponse.attr().rank();
+                    }
+                    
+                    return new TopTrackWrapper(song, playCount, rank);
+                })
+                .toList();
+        
+        var topTrackList = topTrackListData.stream()
+                .map(TopTrackWrapper::track)
+                .toList();
+        
+        var wrappedTopTrackList = topTrackListData.stream()
+                .map(topTrack -> typeConverter.convertFromRecordToEntity("TopTrack", topTrack))
+                .toList();
+        
+        return createResult(topTrackList, wrappedTopTrackList, topTracks.attr());
     }
 
     public void getWeeklyAlbumChart(String user) {
@@ -48,19 +225,66 @@ public class LastFmFunctions {
         // TODO: Implement this method
     }
 
-//    public void getWeeklyChartList(String user) {
-//        // TODO: Implement this method
-//    }
+    public void getWeeklyChartList(String user) {
+        // TODO: Implement this method
+    }
 
     public void getWeeklyTrackChart(String user) {
         // TODO: Implement this method
     }
-
-    public void getTopArtists() {
-        // TODO: Implement this method
+    
+    // Utility methods for native methods
+    
+    private EntityType createEmptyOptional() {
+        return entityInitializer.initializeEntity("Optional", Optional.empty(), false);
     }
+    
+    private EntityType createOptional(Object object) {
+        return entityInitializer.initializeEntity("Optional", object, true);
+    }
+    
+    private EntityType createResult(Object data, Object wrappedData, UserResponseAttr attr) {
+        var wrappedOptional = wrappedData == null ? createEmptyOptional() : createOptional(wrappedData);
+        return entityInitializer.initializeEntity("LastFmResult", data, wrappedOptional, -1, "", createAtr(attr));
+    }
+    
+    private EntityType createErrorResult(LastFmResponse<?> lastFmResponse) {
+        return createResult(lastFmResponse.getErrorResponse().error(), lastFmResponse.getErrorResponse().message());
+    }
+    
+    private EntityType createResult(int errorCode, String errorMessage) {
+        return entityInitializer.initializeEntity("LastFmResult", 0, createEmptyOptional(), errorCode, errorMessage, createEmptyAtr());
+    }
+    
+    private Page createPageFromEntity(EntityType entityType) {
+        return typeConverter.convertFromEntityToRecord(entityType, Page.class);
+    }
+    
+    private DateRange createDateRangeFromEntity(EntityType entityType) {
+        var fromOptional = entityType.getEntityScope().<EntityType>lookup("from").getValue(); // DateRange.from
+        var fromDateOptional = getDateFromOptional(fromOptional);
+        
+        var toOptional = entityType.getEntityScope().<EntityType>lookup("to").getValue();
+        var toDateOptional = getDateFromOptional(toOptional);
 
-    public void getTopTracks() {
-        // TODO: Implement this method
+
+        return new DateRange(fromDateOptional, toDateOptional);
+    }
+    
+    private Optional<LocalDate> getDateFromOptional(EntityType entityType) {
+        var dateOptional = entityType.getEntityScope().<JavaType>lookup("_value").getValue().getOptionalReference(EntityType.class); // DateRange.from._value
+        
+        return dateOptional.map(optionalValue -> {
+            optionalValue.validateType("Date");
+            return optionalValue.getEntityScope().<JavaType>lookup("_date").getValue().getReference(LocalDate.class); // DateRange.from._value.date
+        });
+    }
+    
+    private EntityType createAtr(UserResponseAttr attr) {
+        return typeConverter.convertFromRecordToEntity("Attr", attr);
+    }
+    
+    private EntityType createEmptyAtr() {
+        return entityInitializer.initializeEntity("Attr", 0, 0, 0, 0);
     }
 }

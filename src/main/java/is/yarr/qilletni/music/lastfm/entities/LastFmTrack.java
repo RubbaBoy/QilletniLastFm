@@ -75,7 +75,7 @@ public class LastFmTrack implements Track {
 
     @Override
     public Artist getArtist() {
-        LOGGER.error("Artists are not fully supported in the LastFm service provider. Expect inconsistent behavior.");
+//        LOGGER.error("Artists are not fully supported in the LastFm service provider. Expect inconsistent behavior.");
         if (artist == null) {
             artist = new LastFmArtist("", "", compositeKey.getArtistName());
         }

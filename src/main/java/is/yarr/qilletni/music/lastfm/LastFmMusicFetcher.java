@@ -9,7 +9,11 @@ import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
 import is.yarr.qilletni.music.lastfm.api.responses.AlbumInfoResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.ErrorCode;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullTrackResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.LovedTrackResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.LovedTracksResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.RecentTrackResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.SimpleArtistResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.TopTrackResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAPIUtility;
 import is.yarr.qilletni.music.lastfm.entities.LastFmAlbum;
 import is.yarr.qilletni.music.lastfm.entities.LastFmArtist;
@@ -45,8 +49,7 @@ public class LastFmMusicFetcher implements MusicFetcher {
             return Optional.empty();
         }
 
-        var lastFmArtist = createArtist(track.artist());
-        return Optional.of(new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album(), lastFmArtist), (int) track.duration()));
+        return Optional.of(createTrack(track));
     }
 
     @Override
@@ -64,8 +67,7 @@ public class LastFmMusicFetcher implements MusicFetcher {
             return Optional.empty();
         }
         
-        var lastFmArtist = createArtist(track.artist());
-        return Optional.of(new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album(), lastFmArtist), (int) track.duration()));
+        return Optional.of(createTrack(track));
     }
 
     @Override
@@ -153,19 +155,51 @@ public class LastFmMusicFetcher implements MusicFetcher {
         return Optional.of(createArtist(artist));
     }
     
-    private static LastFmArtist createArtist(SimpleArtistResponse artist) {
+    public static LastFmTrack createTrack(FullTrackResponse track) {
+        var lastFmArtist = createArtist(track.artist());
+        return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album(), lastFmArtist), (int) track.duration());
+    }
+    
+    public static LastFmTrack createTrack(RecentTrackResponse track) {
+        var lastFmArtist = createArtist(track.artist().text(), track.artist().mbid());
+        return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album().mbid(), track.album().text(), lastFmArtist), 0);
+    }
+    
+    public static LastFmTrack createTrack(LovedTrackResponse track) {
+        var lastFmArtist = createArtist(track.artist());
+        return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, null, 0);
+    }
+
+    public static LastFmTrack createTrack(TopTrackResponse track) {
+        var lastFmArtist = createArtist(track.artist());
+        return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, null, track.duration());
+    }
+
+    private static LastFmArtist createArtist(TopTrackResponse.TopArtistResponse artist) {
         return new LastFmArtist(artist.mbid(), artist.url(), artist.name());
     }
-    
-    private static LastFmArtist createArtist(String artistName) {
+
+    public static LastFmArtist createArtist(SimpleArtistResponse artist) {
+        return new LastFmArtist(artist.mbid(), artist.url(), artist.name());
+    }
+
+    public static LastFmArtist createArtist(String artistName, String mbid) {
+        return new LastFmArtist(mbid, "", artistName);
+    }
+
+    public static LastFmArtist createArtist(String artistName) {
         return new LastFmArtist("", "", artistName);
     }
-    
-    private static LastFmAlbum createAlbum(FullTrackResponse.AlbumResponse album, LastFmArtist artist) {
+
+    public static LastFmAlbum createAlbum(FullTrackResponse.AlbumResponse album, LastFmArtist artist) {
         return new LastFmAlbum("", album.title(), artist.getName());
     }
 
-    private static LastFmAlbum createAlbum(AlbumInfoResponse.AlbumResponse album, LastFmArtist artist) {
+    public static LastFmAlbum createAlbum(AlbumInfoResponse.AlbumResponse album, LastFmArtist artist) {
         return new LastFmAlbum(album.mbid(), album.name(), artist.getName());
+    }
+
+    public static LastFmAlbum createAlbum(String mbid, String name, LastFmArtist artist) {
+        return new LastFmAlbum(mbid, name, artist.getName());
     }
 }

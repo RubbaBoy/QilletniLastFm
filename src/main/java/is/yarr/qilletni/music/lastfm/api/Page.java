@@ -2,7 +2,7 @@ package is.yarr.qilletni.music.lastfm.api;
 
 import java.util.Map;
 
-public record Page(int page, int limit) {
+public record Page(int page, int count) {
     public Page() {
         this(-1, -1);
     }
@@ -12,8 +12,8 @@ public record Page(int page, int limit) {
             params.put("page", String.valueOf(page));
         }
 
-        if (limit != -1) {
-            params.put("limit", String.valueOf(limit));
+        if (count != -1) {
+            params.put("limit", String.valueOf(count));
         }
     }
 }

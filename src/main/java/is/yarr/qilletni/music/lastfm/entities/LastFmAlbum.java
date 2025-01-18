@@ -64,7 +64,7 @@ public class LastFmAlbum implements Album {
 
     @Override
     public Artist getArtist() {
-        LOGGER.error("Artists are not fully supported in the LastFm service provider. They will only have the artist name from an Album");
+//        LOGGER.error("Artists are not fully supported in the LastFm service provider. They will only have the artist name from an Album");
         if (artist == null) {
             artist = new LastFmArtist("", "", compositeKey.getArtistName());
         }

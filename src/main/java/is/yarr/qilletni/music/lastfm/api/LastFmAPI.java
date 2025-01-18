@@ -83,7 +83,7 @@ public class LastFmAPI {
         params.putAll(additionalParams);
 
         System.out.println("params = " + params);
-        
+
         var apiSig = LastFmAPIUtility.generateSignature(params, apiSecret);
         params.put("api_sig", apiSig);
         params.put("format", "json");
@@ -109,10 +109,10 @@ public class LastFmAPI {
         return makeRawLastFmRequest(httpClient, method, apiKey, apiSecret, additionalParams);
     }
 
-    public CompletableFuture<Void> getUserInfo() {
+    public CompletableFuture<Void> getUserInfo(String user) {
         var completableFuture = new CompletableFuture<Void>();
 
-        makeLastFmRequest("user.getInfo", Map.of("user", "RubbaBoy"))
+        makeLastFmRequest("user.getInfo", Map.of("user", user))
                 .thenApply(HttpResponse::body)
                 .thenAccept(response -> {
                     System.out.println("response = " + response);
@@ -147,8 +147,8 @@ public class LastFmAPI {
         return makeLastFmRequest("track.getInfo", params.getMap())
                 .thenApply(HttpResponse::body)
                 .thenApply(response ->
-                    this.<GetTrackInfoResponse>checkErrorResponse(response)
-                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
+                        this.<GetTrackInfoResponse>checkErrorResponse(response)
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
     }
 
     public CompletableFuture<LastFmResponse<GetTrackInfoResponse>> getTrackInfo(String mbid) {
@@ -158,7 +158,7 @@ public class LastFmAPI {
                 .thenApply(HttpResponse::body)
                 .thenApply(response ->
                         this.<GetTrackInfoResponse>checkErrorResponse(response)
-                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetTrackInfoResponse.class))));
     }
 
     public CompletableFuture<LastFmResponse<GetArtistInfoResponse>> getArtistInfo(String mbid) {
@@ -183,7 +183,7 @@ public class LastFmAPI {
                 .thenApply(HttpResponse::body)
                 .thenApply(response ->
                         this.<GetArtistInfoResponse>checkErrorResponse(response)
-                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetArtistInfoResponse.class))));
+                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetArtistInfoResponse.class))));
     }
 
     // TODO: Getting friends does NOT support `recenttracks` yet
@@ -204,9 +204,11 @@ public class LastFmAPI {
 
         return makeLastFmRequest("user.getLovedTracks", params.getMap())
                 .thenApply(HttpResponse::body)
-                .thenApply(response ->
-                        this.<GetLovedTracksResponse>checkErrorResponse(response)
-                                .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetLovedTracksResponse.class))));
+                .thenApply(response -> {
+                    System.out.println("response = " + response);
+                    return this.<GetLovedTracksResponse>checkErrorResponse(response)
+                            .orElseGet(() -> new LastFmResponse<>(gson.fromJson(response, GetLovedTracksResponse.class)));
+                });
     }
 
     public CompletableFuture<LastFmResponse<GetRecentTracksResponse>> getRecentTracks(String user, boolean extended, DateRange dateRange, Page page) {

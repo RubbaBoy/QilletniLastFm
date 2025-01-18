@@ -21,7 +21,7 @@ public record RecentTrackResponse(
     ) {}
 
     public record AttrResponse(
-            @SerializedName("nowplaying") String nowPlaying
+            @SerializedName("nowplaying") boolean nowPlaying
     ) {}
 
     public record RecentArtistResponse(

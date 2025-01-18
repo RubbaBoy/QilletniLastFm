@@ -5,6 +5,7 @@ import is.yarr.qilletni.api.exceptions.config.ConfigInitializeException;
 import is.yarr.qilletni.api.lib.persistence.PackageConfig;
 import is.yarr.qilletni.api.music.MusicCache;
 import is.yarr.qilletni.api.music.MusicFetcher;
+import is.yarr.qilletni.api.music.MusicTypeConverter;
 import is.yarr.qilletni.api.music.PlayActor;
 import is.yarr.qilletni.api.music.StringIdentifier;
 import is.yarr.qilletni.api.music.factories.AlbumTypeFactory;
@@ -12,9 +13,13 @@ import is.yarr.qilletni.api.music.factories.CollectionTypeFactory;
 import is.yarr.qilletni.api.music.factories.SongTypeFactory;
 import is.yarr.qilletni.api.music.orchestration.TrackOrchestrator;
 import is.yarr.qilletni.lib.lastfm.database.HibernateUtil;
+import is.yarr.qilletni.music.lastfm.LastFmMusicTypeConverter;
 import is.yarr.qilletni.music.lastfm.LastFmMusicCache;
 import is.yarr.qilletni.music.lastfm.LastFmMusicFetcher;
 import is.yarr.qilletni.music.lastfm.LastFmStringIdentifier;
+import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
+import is.yarr.qilletni.music.lastfm.api.Page;
+import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAuthorizer;
 import is.yarr.qilletni.music.lastfm.play.ReroutablePlayActor;
 import org.slf4j.Logger;
@@ -33,6 +38,7 @@ public class LastFmServiceProvider implements ServiceProvider {
     private LastFmMusicCache musicCache;
     private MusicFetcher musicFetcher;
     private TrackOrchestrator trackOrchestrator;
+    private MusicTypeConverter musicTypeConverter;
     private StringIdentifier stringIdentifier;
     private LastFmAuthorizer authorizer;
 
@@ -50,6 +56,8 @@ public class LastFmServiceProvider implements ServiceProvider {
             musicFetcher = lastFmMusicFetcher;
             musicCache = new LastFmMusicCache(lastFmMusicFetcher);
             trackOrchestrator = defaultTrackOrchestratorFunction.apply(new ReroutablePlayActor(), musicCache);
+            
+            musicTypeConverter = new LastFmMusicTypeConverter(musicCache);
 
             serviceProviderInstance = this;
 
@@ -58,15 +66,17 @@ public class LastFmServiceProvider implements ServiceProvider {
     }
     
     private void sayHello(LastFmMusicCache musicCache) {
-        var trackOptional = musicCache.getTrack("God Knows", "Knocked Loose");
+//        var trackOptional = musicCache.getTrack("God Knows", "Knocked Loose");
+//
+//        if (trackOptional.isEmpty()) {
+//            LOGGER.error("Track not found");
+//            return;
+//        }
+//
+//        var track = trackOptional.get();
+//        LOGGER.info("Track found: {}", track);
         
-        if (trackOptional.isEmpty()) {
-            LOGGER.error("Track not found");
-            return;
-        }
-        
-        var track = trackOptional.get();
-        LOGGER.info("Track found: {}", track);
+//        LastFmAPI.getInstance().getLovedTracks("RubbaBoy", new Page()).join();
     }
 
     @Override
@@ -93,6 +103,11 @@ public class LastFmServiceProvider implements ServiceProvider {
     @Override
     public TrackOrchestrator getTrackOrchestrator() {
         return Objects.requireNonNull(trackOrchestrator, "ServiceProvider#initialize must be invoked to initialize TrackOrchestrator");
+    }
+
+    @Override
+    public MusicTypeConverter getMusicTypeConverter() {
+        return Objects.requireNonNull(musicTypeConverter, "ServiceProvider#initialize must be invoked to initialize MusicTypeConverter");
     }
 
     @Override

@@ -13,7 +13,7 @@ public record TopTrackResponse(
         String url,
         int duration,
         @SerializedName("@attr") AttrResponse attr, // This is sometimes null?
-        int playcount // This is also sometimes null?
+        Integer playcount // This is also sometimes null?
 ) {
     public record AttrResponse(
             int rank

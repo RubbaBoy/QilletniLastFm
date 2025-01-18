@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 public record DateRange(Optional<LocalDate> from, Optional<LocalDate> to) {
+
     public DateRange() {
         this(Optional.empty(), Optional.empty());
     }

@@ -14,6 +14,16 @@ public enum Period {
     Period(String period) {
         this.period = period;
     }
+    
+    public static Period fromString(String period) {
+        for (var p : Period.values()) {
+            if (p.getPeriod().equals(period)) {
+                return p;
+            }
+        }
+        
+        return UNSET;
+    }
 
     public String getPeriod() {
         return period;
