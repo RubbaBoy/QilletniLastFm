@@ -8,12 +8,15 @@ import is.yarr.qilletni.api.music.Track;
 import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
 import is.yarr.qilletni.music.lastfm.api.responses.AlbumInfoResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.ErrorCode;
+import is.yarr.qilletni.music.lastfm.api.responses.GetTopAlbumsResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullArtistResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.FullTrackResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.LovedTrackResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.LovedTracksResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.RecentTrackResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.SimpleArtistResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.TopTrackResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.generic.GenericArtistResponse;
 import is.yarr.qilletni.music.lastfm.auth.LastFmAPIUtility;
 import is.yarr.qilletni.music.lastfm.entities.LastFmAlbum;
 import is.yarr.qilletni.music.lastfm.entities.LastFmArtist;
@@ -154,17 +157,17 @@ public class LastFmMusicFetcher implements MusicFetcher {
 
         return Optional.of(createArtist(artist));
     }
-    
+
     public static LastFmTrack createTrack(FullTrackResponse track) {
         var lastFmArtist = createArtist(track.artist());
         return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album(), lastFmArtist), (int) track.duration());
     }
-    
+
     public static LastFmTrack createTrack(RecentTrackResponse track) {
         var lastFmArtist = createArtist(track.artist().text(), track.artist().mbid());
         return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, createAlbum(track.album().mbid(), track.album().text(), lastFmArtist), 0);
     }
-    
+
     public static LastFmTrack createTrack(LovedTrackResponse track) {
         var lastFmArtist = createArtist(track.artist());
         return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, null, 0);
@@ -175,11 +178,7 @@ public class LastFmMusicFetcher implements MusicFetcher {
         return new LastFmTrack(track.mbid(), track.name(), lastFmArtist, null, track.duration());
     }
 
-    private static LastFmArtist createArtist(TopTrackResponse.TopArtistResponse artist) {
-        return new LastFmArtist(artist.mbid(), artist.url(), artist.name());
-    }
-
-    public static LastFmArtist createArtist(SimpleArtistResponse artist) {
+    public static LastFmArtist createArtist(GenericArtistResponse artist) {
         return new LastFmArtist(artist.mbid(), artist.url(), artist.name());
     }
 
@@ -191,12 +190,20 @@ public class LastFmMusicFetcher implements MusicFetcher {
         return new LastFmArtist("", "", artistName);
     }
 
+    public static LastFmArtist createArtist(FullArtistResponse topArtistResponse) {
+        return new LastFmArtist(topArtistResponse.mbid(), topArtistResponse.url(), topArtistResponse.name());
+    }
+
     public static LastFmAlbum createAlbum(FullTrackResponse.AlbumResponse album, LastFmArtist artist) {
         return new LastFmAlbum("", album.title(), artist.getName());
     }
 
     public static LastFmAlbum createAlbum(AlbumInfoResponse.AlbumResponse album, LastFmArtist artist) {
         return new LastFmAlbum(album.mbid(), album.name(), artist.getName());
+    }
+
+    public static LastFmAlbum createAlbum(GetTopAlbumsResponse.Album topAlbumResponse) {
+        return new LastFmAlbum(topAlbumResponse.mbid(), topAlbumResponse.name(), topAlbumResponse.artist().name());
     }
 
     public static LastFmAlbum createAlbum(String mbid, String name, LastFmArtist artist) {

@@ -59,9 +59,41 @@ native fun getRecentTracks(user)
  */
 native fun getRecentTracks(user, page, dateRange)
 
+/**
+ * Gets the top albums of a user. This is unpaged, so it returns the all time top 50.
+ *
+ * @param[@type string] user The username of the user to get the top albums of
+ * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of albums, and wrapped data as a list of [@type lastfm.TopAlbum]
+ */
 native fun getTopAlbums(user)
 
+/**
+ * Gets the top albums of a user.
+ *
+ * @param[@type string] user The username of the user to get the top albums of
+ * @param[@type string] period The period to get the top albums for. Can be "overall", "7day", "1month", "3month", "6month", or "12month"
+ * @param[@type lastfm.Page] page The page of the request
+ * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of albums, and wrapped data as a list of [@type lastfm.TopAlbum]
+ */
+native fun getTopAlbums(user, page, dateRange)
+
+/**
+ * Gets the top artists of a user. This is unpaged, so it returns the all time top 50.
+ *
+ * @param[@type string] user The username of the user to get the top artists of
+ * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of artists, and wrapped data as a list of [@type lastfm.TopArtist]
+ */
 native fun getTopArtists(user)
+
+/**
+ * Gets the top artists of a user.
+ *
+ * @param[@type string] user The username of the user to get the top artists of
+ * @param[@type string] period The period to get the top albums for. Can be "overall", "7day", "1month", "3month", "6month", or "12month"
+ * @param[@type lastfm.Page] page The page of the request
+ * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of artists, and wrapped data as a list of [@type lastfm.TopArtist]
+ */
+native fun getTopArtists(user, page, dateRange)
 
 /**
  * Gets the top tracks of a user. This is unpaged, so it returns the all time top 50.
@@ -81,13 +113,15 @@ native fun getTopTracks(user)
  */
 native fun getTopTracks(user, period, page)
 
-native fun getWeeklyAlbumChart(user)
-
-native fun getWeeklyArtistChart(user)
-
-native fun getWeeklyChartList(user)
-
-native fun getWeeklyTrackChart(user)
+// TODO: These
+//
+//native fun getWeeklyAlbumChart(user)
+//
+//native fun getWeeklyArtistChart(user)
+//
+//native fun getWeeklyChartList(user)
+//
+//native fun getWeeklyTrackChart(user)
 
 
 entity Page {
@@ -189,6 +223,25 @@ entity RecentTrack {
     RecentTrack(track, nowPlaying, dateUts, dateText)
 }
 
+// getTopAlbums
+
+entity TopAlbum {
+    album albumValue
+    int playCount
+    int rank
+    
+    TopAlbum(albumValue, playCount, rank)
+}
+
+// getTopArtists
+
+entity TopArtist {
+    Artist artist
+    int playCount
+    int rank
+    
+    TopArtist(artist, playCount, rank)
+}
 
 // getTopTracks
 

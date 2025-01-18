@@ -1,6 +1,7 @@
 package is.yarr.qilletni.music.lastfm.api.responses.reusable;
 
 import com.google.gson.annotations.SerializedName;
+import is.yarr.qilletni.music.lastfm.api.responses.reusable.generic.GenericArtistResponse;
 
 import java.util.List;
 
@@ -9,7 +10,7 @@ public record TopTrackResponse(
         String mbid,
         String name,
         List<ImageResponse> image,
-        TopArtistResponse artist,
+        SimpleArtistResponse artist,
         String url,
         int duration,
         @SerializedName("@attr") AttrResponse attr, // This is sometimes null?
@@ -17,12 +18,6 @@ public record TopTrackResponse(
 ) {
     public record AttrResponse(
             int rank
-    ) {}
-
-    public record TopArtistResponse(
-            String mbid,
-            String url,
-            String name
     ) {}
 }
 

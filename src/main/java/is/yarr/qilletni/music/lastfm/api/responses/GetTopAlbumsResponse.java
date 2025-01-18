@@ -20,9 +20,8 @@ public record GetTopAlbumsResponse(TopAlbums topalbums) {
             List<ImageResponse> image,
             String mbid,
             String url,
-            String playcount,
+            Integer playcount,
             @SerializedName("@attr") RankAttrResponse attr,
             String name
-    ) {
-    }
+    ) {}
 }

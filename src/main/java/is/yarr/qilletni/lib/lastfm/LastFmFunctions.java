@@ -1,32 +1,39 @@
 package is.yarr.qilletni.lib.lastfm;
 
+import is.yarr.qilletni.api.lang.types.AlbumType;
 import is.yarr.qilletni.api.lang.types.EntityType;
 import is.yarr.qilletni.api.lang.types.JavaType;
 import is.yarr.qilletni.api.lang.types.SongType;
 import is.yarr.qilletni.api.lang.types.conversion.TypeConverter;
 import is.yarr.qilletni.api.lang.types.entity.EntityInitializer;
+import is.yarr.qilletni.api.music.factories.AlbumTypeFactory;
 import is.yarr.qilletni.api.music.factories.SongTypeFactory;
 import is.yarr.qilletni.music.lastfm.LastFmMusicFetcher;
 import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
 import is.yarr.qilletni.music.lastfm.api.Page;
 import is.yarr.qilletni.music.lastfm.api.Period;
 import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
+import is.yarr.qilletni.music.lastfm.api.responses.GetTopAlbumsResponse;
+import is.yarr.qilletni.music.lastfm.api.responses.GetTopArtistsResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.LastFmResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.UserResponseAttr;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class LastFmFunctions {
     
     private final LastFmAPI lastFmAPI;
     private final EntityInitializer entityInitializer;
     private final SongTypeFactory songTypeFactory;
+    private final AlbumTypeFactory albumTypeFactory;
     private final TypeConverter typeConverter;
 
-    public LastFmFunctions(EntityInitializer entityInitializer, SongTypeFactory songTypeFactory, TypeConverter typeConverter) {
+    public LastFmFunctions(EntityInitializer entityInitializer, SongTypeFactory songTypeFactory, AlbumTypeFactory albumTypeFactory, TypeConverter typeConverter) {
         this.entityInitializer = entityInitializer;
         this.songTypeFactory = songTypeFactory;
+        this.albumTypeFactory = albumTypeFactory;
         this.typeConverter = typeConverter;
         this.lastFmAPI = LastFmAPI.getInstance();
     }
@@ -67,8 +74,6 @@ public class LastFmFunctions {
     public EntityType getLovedTracks(String user, EntityType pageEntity) {
         return fetchLovedTracks(user, createPageFromEntity(pageEntity));
     }
-    
-    private record LovedTrackWrapper(SongType track, long dateUts, String dateText) {}
     
     private EntityType fetchLovedTracks(String user, Page page) {
         var lovedTracksResponse = lastFmAPI.getLovedTracks(user, page).join();
@@ -114,9 +119,7 @@ public class LastFmFunctions {
         
         return fetchRecentTracks(user, page, dateRange);
     }
-    
-    private record RecentTrackWrapper(SongType track, boolean nowPlaying, long dateUts, String dateText) {}
-    
+
     private EntityType fetchRecentTracks(String user, Page page, DateRange dateRange) {
         var recentTracksResponse = lastFmAPI.getRecentTracks(user, false, dateRange, page).join();
         if (recentTracksResponse.isError()) {
@@ -159,12 +162,101 @@ public class LastFmFunctions {
         return createResult(recentTrackList, wrappedRecentTrackList, recentTracks.attr());
     }
 
-    public void getTopAlbums(String user) {
-        // TODO: Implement this method
+    public EntityType getTopAlbums(String user) {
+        return fetchTopAlbums(user, Period.UNSET, new Page());
     }
 
-    public void getTopArtists(String user) {
-        // TODO: Implement this method
+    public EntityType getTopAlbums(String user, String periodString, EntityType pageEntity) {
+        var page = createPageFromEntity(pageEntity);
+        var period = Period.fromString(periodString);
+
+        return fetchTopAlbums(user, period, page);
+    }
+    
+    public EntityType fetchTopAlbums(String user, Period period, Page pageEntity) {
+        var topAlbumsResponse = lastFmAPI.getTopAlbums(user, period, pageEntity).join();
+        if (topAlbumsResponse.isError()) {
+            return createErrorResult(topAlbumsResponse);
+        }
+        
+        var topAlbums = topAlbumsResponse.getResponse().topalbums();
+        
+        var topAlbumListData = topAlbums.album().stream()
+                .map(topAlbumResponse -> {
+                    var album = LastFmMusicFetcher.createAlbum(topAlbumResponse);
+                    AlbumType albumType = albumTypeFactory.createAlbumFromTrack(album);
+                    var playCount = -1;
+                    if (topAlbumResponse.playcount() != null) {
+                        playCount = topAlbumResponse.playcount();
+                    }
+                    
+                    var rank = -1;
+                    if (topAlbumResponse.attr() != null) {
+                        rank = topAlbumResponse.attr().rank();
+                    }
+                    
+                    return new TopAlbumWrapper(albumType, playCount, rank);
+                })
+                .toList();
+        
+        var topAlbumList = topAlbumListData.stream()
+                .map(TopAlbumWrapper::album)
+                .toList();
+        
+        var wrappedTopAlbumList = topAlbumListData.stream()
+                .map(topAlbum -> typeConverter.convertFromRecordToEntity("TopAlbum", topAlbum))
+                .toList();
+        
+        return createResult(topAlbumList, wrappedTopAlbumList, topAlbums.attr());
+    }
+
+    public EntityType getTopArtists(String user) {
+        return fetchTopArtists(user, Period.UNSET, new Page());
+    }
+
+    public EntityType getTopArtists(String user, String periodString, EntityType pageEntity) {
+        var page = createPageFromEntity(pageEntity);
+        var period = Period.fromString(periodString);
+        
+        return fetchTopArtists(user, period, page);
+    }
+    
+    public EntityType fetchTopArtists(String user, Period period, Page pageEntity) {
+        var topArtistsResponse = lastFmAPI.getTopArtists(user, period, pageEntity).join();
+        if (topArtistsResponse.isError()) {
+            return createErrorResult(topArtistsResponse);
+        }
+
+        var topArtists = topArtistsResponse.getResponse().topartists();
+
+        var topArtistListData = topArtists.artist().stream()
+                .map(topArtistResponse -> {
+                    var artist = LastFmMusicFetcher.createArtist(topArtistResponse);
+                    var artistType = entityInitializer.initializeEntity("Artist", artist.getId(), artist.getName());
+                    
+                    var playCount = -1;
+                    if (topArtistResponse.playcount() != null) {
+                        playCount = topArtistResponse.playcount();
+                    }
+
+                    var rank = -1;
+                    if (topArtistResponse.attr() != null) {
+                        rank = topArtistResponse.attr().rank();
+                    }
+                    
+                    return new TopArtistWrapper(artistType, playCount, rank);
+                })
+                .toList();
+
+        var topArtistList = topArtistListData.stream()
+                .map(TopArtistWrapper::artist)
+                .toList();
+
+        var wrappedTopArtistList = topArtistListData.stream()
+                .map(topArtist -> typeConverter.convertFromRecordToEntity("TopArtist", topArtist))
+                .toList();
+
+        return createResult(topArtistList, wrappedTopArtistList, topArtists.attr());
     }
 
     public EntityType getTopTracks(String user) {
@@ -177,8 +269,6 @@ public class LastFmFunctions {
         
         return fetchTopTracks(user, period, page);
     }
-
-    private record TopTrackWrapper(SongType track, int playCount, int rank) {}
 
     private EntityType fetchTopTracks(String user, Period period, Page pageEntity) {
         var topTracksResponse = lastFmAPI.getTopTracks(user, period, pageEntity).join();
@@ -287,4 +377,15 @@ public class LastFmFunctions {
     private EntityType createEmptyAtr() {
         return entityInitializer.initializeEntity("Attr", 0, 0, 0, 0);
     }
+
+    private record LovedTrackWrapper(SongType track, long dateUts, String dateText) {}
+    
+    private record RecentTrackWrapper(SongType track, boolean nowPlaying, long dateUts, String dateText) {}
+
+    private record TopAlbumWrapper(AlbumType album, int playCount, int rank) {}
+
+    private record TopArtistWrapper(EntityType artist, int playCount, int rank) {}
+    
+    private record TopTrackWrapper(SongType track, int playCount, int rank) {}
+    
 }
