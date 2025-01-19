@@ -186,15 +186,19 @@ entity DateRange {
     DateRange(from, to)
     
     static fun ofFrom(from) {
-        return DateRange(Optional.fromValue(from), Optional.fromEmpty())
+        return new DateRange(Optional.fromValue(from), Optional.fromEmpty())
     }
     
     static fun ofTo(to) {
-        return DateRange(Optional.fromEmpty(), Optional.fromValue(to))
+        return new DateRange(Optional.fromEmpty(), Optional.fromValue(to))
     }
     
     static fun of(from, to) {
-        return DateRange(Optional.fromValue(from), Optional.fromValue(to))
+        return new DateRange(Optional.fromValue(from), Optional.fromValue(to))
+    }
+    
+    static fun ofEmpty() {
+        return new DateRange(Optional.fromEmpty(), Optional.fromEmpty())
     }
 }
 
