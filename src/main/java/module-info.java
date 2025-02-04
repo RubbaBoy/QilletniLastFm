@@ -1,6 +1,6 @@
 module QilletniLastFm.main {
 
-    requires Qilletni.qilletni.api.main;
+    requires qilletni.api;
     requires org.eclipse.jetty.server;
     requires java.desktop;
     requires java.net.http;

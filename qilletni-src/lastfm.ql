@@ -173,13 +173,13 @@ entity LastFmResult {
 entity DateRange {
     /**
      * The start date of the range.
-     * @type[core.Date]
+     * @type core.Date
      */
     Optional from
     
     /**
      * The end date of the range.
-     * @type[core.Date]
+     * @type core.Date
      */
     Optional to
     
@@ -206,15 +206,15 @@ entity DateRange {
  * Wrapped data
  */
  
- // getLovedTracks
- 
- entity LovedTrack {
-     song track
-     int dateUts
-     int dateText
-     
-     LovedTrack(track, dateUts, dateText)
- }
+// getLovedTracks
+
+entity LovedTrack {
+    song track
+    int dateUts
+    int dateText
+    
+    LovedTrack(track, dateUts, dateText)
+}
 
 // getRecentTracks
 

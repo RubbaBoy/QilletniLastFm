@@ -13,14 +13,11 @@ import is.yarr.qilletni.music.lastfm.api.LastFmAPI;
 import is.yarr.qilletni.music.lastfm.api.Page;
 import is.yarr.qilletni.music.lastfm.api.Period;
 import is.yarr.qilletni.music.lastfm.api.responses.DateRange;
-import is.yarr.qilletni.music.lastfm.api.responses.GetTopAlbumsResponse;
-import is.yarr.qilletni.music.lastfm.api.responses.GetTopArtistsResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.LastFmResponse;
 import is.yarr.qilletni.music.lastfm.api.responses.reusable.UserResponseAttr;
 
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 public class LastFmFunctions {
     
