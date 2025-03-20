@@ -15,7 +15,7 @@ native fun getFriends(user)
  * Get the friends of a user.
  *
  * @param[@type string] user The username of the user to get the friends of
- * @param[@type Page] page The page of the request
+ * @param[@type lastfm.Page] page The page of the request
  * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of [@type core.User]s, and no wrapped data
  */
 native fun getFriends(user, page)
@@ -34,7 +34,7 @@ native fun getLovedTracks(user) // TODO
  * Gets the tracks favorited by the user.
  *
  * @param[@type string] user The username of the user to get the loved tracks of
- * @param[@type Page] page The page of the request
+ * @param[@type lastfm.Page] page The page of the request
  * @returns[@type lastfm.LastFmResult] The result of the request, with data being a list of songs, and wrapped data as a list of [@type lastfm.LovedTrack]
  */
 native fun getLovedTracks(user, page) // TODO
