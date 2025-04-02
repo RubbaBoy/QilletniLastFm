@@ -15,7 +15,7 @@
 
         <property name="hbm2ddl.auto">update</property>
 
-        <mapping class="is.yarr.qilletni.music.lastfm.entities.LastFmTrack"/>
-        <mapping class="is.yarr.qilletni.music.lastfm.entities.LastFmAlbum"/>
+        <mapping class="dev.qilletni.lib.lastfm.music.entities.LastFmTrack"/>
+        <mapping class="dev.qilletni.lib.lastfm.music.entities.LastFmAlbum"/>
     </session-factory>
 </hibernate-configuration>
